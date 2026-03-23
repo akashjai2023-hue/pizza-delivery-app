@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DAMINOS</title>
+<style>
+:root{
+--bg:#ffffff;--text:#222;--primary:#e31837;--card:#f5f5f5;
+}
+[data-theme="dark"]{
+--bg:#121212;--text:#fff;--card:#1e1e1e;
+}
+body{margin:0;font-family:sans-serif;background:var(--bg);color:var(--text);}
+header{position:sticky;top:0;background:var(--primary);color:#fff;padding:10px;display:flex;justify-content:space-between}
+.container{padding:10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.card{background:var(--card);padding:10px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,.2);transition:.3s}
+.card:hover{transform:scale(1.03)}
+button{padding:5px 10px;border:none;background:var(--primary);color:#fff;border-radius:5px;cursor:pointer}
+#cart{position:fixed;right:0;top:0;width:250px;height:100%;background:var(--card);overflow:auto;padding:10px}
+input,select{padding:5px;width:100%;margin:5px 0}
+.hidden{display:none}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#000;color:#fff;padding:10px;border-radius:5px}
+</style>
+</head>
+<body>
+
+<div id="login">
+<h2 style="text-align:center">DAMINOS LOGIN</h2>
+<input id="email" placeholder="Gmail">
+<input id="pass" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+</div>
+
+<div id="app" class="hidden">
+<header>
+<h3>DAMINOS</h3>
+<button onclick="toggleTheme()">Theme</button>
+</header>
+<div class="container">
+<input id="search" placeholder="Search pizza..." oninput="render()">
+<select id="category" onchange="render()">
+<option>All</option><option>Veg</option><option>Non-Veg</option>
+</select>
+<div class="grid" id="menu"></div>
+</div>
+
+<div id="cart">
+<h3>Cart</h3>
+<div id="cartItems"></div>
+<h4 id="total"></h4>
+<button onclick="checkout()">Checkout</button>
+</div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+const pizzas=[
+{name:"Margherita",cat:"Veg",price:199},
+{name:"Pepperoni",cat:"Non-Veg",price:299},
+{name:"Farmhouse",cat:"Veg",price:249}
+];
+let cart=JSON.parse(localStorage.getItem('cart'))||[];
+
+function login(){
+if(email.value&&pass.value){
+document.getElementById('login').classList.add('hidden');
+document.getElementById('app').classList.remove('hidden');
+render();
+}
+}
+
+function toggleTheme(){
+let t=document.body.getAttribute('data-theme');
+document.body.setAttribute('data-theme',t==='dark'?'light':'dark');
+localStorage.setItem('theme',document.body.getAttribute('data-theme'));
+}
+
+(function(){
+let t=localStorage.getItem('theme');
+if(t)document.body.setAttribute('data-theme',t);
+})();
+
+function render(){
+let m=document.getElementById('menu');
+m.innerHTML="";
+let s=search.value.toLowerCase();
+let c=category.value;
+pizzas.filter(p=>(c==='All'||p.cat===c)&&p.name.toLowerCase().includes(s))
+.forEach(p=>{
+m.innerHTML+=`<div class='card'>
+<h4>${p.name}</h4>
+<p>${p.cat}</p>
+<p>₹${p.price}</p>
+<button onclick="add('${p.name}')">Add</button>
+</div>`;
+});
+renderCart();
+}
+
+function add(name){
+let item=cart.find(i=>i.name===name);
+if(item)item.qty++; else cart.push({name,qty:1});
+save();toast('Added');
+}
+
+function renderCart(){
+let c=document.getElementById('cartItems');
+c.innerHTML="";
+let total=0;
+cart.forEach(i=>{
+let p=pizzas.find(p=>p.name===i.name);
+total+=p.price*i.qty;
+c.innerHTML+=`<div>
+${i.name} x${i.qty}
+<button onclick="inc('${i.name}')">+</button>
+<button onclick="dec('${i.name}')">-</button>
+</div>`;
+});
+document.getElementById('total').innerText='Total: ₹'+total;
+}
+
+function inc(n){cart.find(i=>i.name===n).qty++;save();}
+function dec(n){
+let i=cart.find(i=>i.name===n);
+i.qty--;if(i.qty<=0)cart=cart.filter(x=>x.name!==n);
+save();
+}
+
+function save(){
+localStorage.setItem('cart',JSON.stringify(cart));
+render();
+}
+
+function checkout(){
+if(cart.length===0)return alert('Cart empty');
+let name=prompt('Name');
+let phone=prompt('Phone');
+let addr=prompt('Address');
+if(!name||!phone||!addr)return alert('Fill all');
+alert('Order placed!');
+cart=[];save();
+}
+
+function toast(msg){
+let t=document.getElementById('toast');
+t.innerText=msg;t.classList.remove('hidden');
+setTimeout(()=>t.classList.add('hidden'),1500);
+}
+</script>
+</body>
+</html>
